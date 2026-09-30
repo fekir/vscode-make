@@ -1,0 +1,10 @@
+plugin for vscode
+
+support for make
+
+ * parse makefiles and collect targets
+ * show list of target in activity bar
+ * execute targets with one click
+ * hide targets
+ * change make command
+ * blacklist folder / max depth where to search for commands

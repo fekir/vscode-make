@@ -1,0 +1,165 @@
+{
+  "name": "@EXTENSION_NAME@",
+  "displayName": "@EXTENSION_DISPLAY_NAME@",
+  "description": "@EXTENSION_DESCRIPTION@",
+  "version": "@EXTENSION_VERSION@",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "@EXTENSION_DISPLAY_NAME@",
+      "properties": {
+        "codeMake.makePath": {
+          "type": "string",
+          "default": "make",
+          "scope": "resource",
+          "description": "Make executable name or path."
+        },
+        "codeMake.exclude": {
+          "type": "array",
+          "default": [],
+          "scope": "resource",
+          "items": {
+            "type": "string"
+          },
+          "description": "Patterns for files and directories to be excluded from Makefile discovery."
+        },
+        "codeMake.maxDepth": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0,
+          "scope": "resource",
+          "description": "Number of subdirectories to search for Makefiles below the workspace root."
+        },
+        "codeMake.hiddenTargets": {
+          "type": "array",
+          "default": [],
+          "scope": "resource",
+          "items": {
+            "type": "string"
+          },
+          "description": "Hidden Make target names from activity."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codeMake",
+          "title": "Make",
+          "icon": "media/make.svg"
+        }
+      ]
+    },
+    "views": {
+      "codeMake": [
+        {
+          "id": "codeMakeTargets",
+          "name": "Targets",
+          "icon": "media/make.svg"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "codeMake.refresh",
+        "title": "Refresh Make Targets",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "codeMake.runTarget",
+        "title": "Run Make Target",
+        "icon": "$(play)"
+      },
+      {
+        "command": "codeMake.openTargetSource",
+        "title": "Open Source File",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "codeMake.hideTarget",
+        "title": "Hide Make Target",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "codeMake.unhideTarget",
+        "title": "Show Make Target",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "codeMake.clearHiddenTargets",
+        "title": "Show Hidden Targets",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "codeMake.hideShownTargets",
+        "title": "Hide Hidden Targets",
+        "icon": "$(eye-closed)"
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "codeMake",
+        "required": [
+          "target"
+        ],
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "Make target"
+          }
+        }
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "codeMake.refresh",
+          "when": "view == codeMakeTargets",
+          "group": "navigation@1"
+        },
+        {
+          "command": "codeMake.clearHiddenTargets",
+          "when": "view == codeMakeTargets && !codeMake.showingHiddenTargets",
+          "group": "navigation@2"
+        },
+        {
+          "command": "codeMake.hideShownTargets",
+          "when": "view == codeMakeTargets && codeMake.showingHiddenTargets",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "codeMake.runTarget",
+          "when": "view == codeMakeTargets",
+          "group": "inline"
+        },
+        {
+          "command": "codeMake.openTargetSource",
+          "when": "view == codeMakeTargets",
+          "group": "inline"
+        },
+        {
+          "command": "codeMake.hideTarget",
+          "when": "view == codeMakeTargets && viewItem == makeTarget",
+          "group": "inline@3"
+        },
+        {
+          "command": "codeMake.unhideTarget",
+          "when": "view == codeMakeTargets && viewItem == hiddenMakeTarget",
+          "group": "inline@3"
+        }
+      ]
+    }
+  }
+}
