@@ -9,6 +9,15 @@ export function updateHiddenTargetsInConfig(values: string[]): Thenable < void >
   return vscode.workspace.getConfiguration('codeMake').update(HIDDEN_TARGETS_KEY, values, vscode.ConfigurationTarget.Workspace);
 }
 
+const STARRED_TARGETS_KEY = 'starredTargets';
+export function getStarredTargetsFromConfig(): Set < string > {
+  const configured = vscode.workspace.getConfiguration('codeMake').get < string[] > (STARRED_TARGETS_KEY, [])
+  return new Set(configured);
+}
+export function updateStarredTargetsInConfig(values: string[]): Thenable < void > {
+  return vscode.workspace.getConfiguration('codeMake').update(STARRED_TARGETS_KEY, values, vscode.ConfigurationTarget.Workspace);
+}
+
 export function getMakeCommand(): string {
   return vscode.workspace.getConfiguration('codeMake').get('makePath', 'make');
 }

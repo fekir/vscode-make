@@ -48,6 +48,15 @@
             "type": "string"
           },
           "description": "Hidden Make target names from activity."
+        },
+        "codeMake.starredTargets": {
+          "type": "array",
+          "default": [],
+          "scope": "resource",
+          "items": {
+            "type": "string"
+          },
+          "description": "Starred Make target names from activity."
         }
       }
     },
@@ -94,6 +103,16 @@
         "command": "codeMake.unhideTarget",
         "title": "Show Make Target",
         "icon": "$(eye)"
+      },
+      {
+        "command": "codeMake.starTarget",
+        "title": "Star Make Target",
+        "icon": "$(star-full)"
+      },
+      {
+        "command": "codeMake.unstarTarget",
+        "title": "Unstar Make Target",
+        "icon": "$(star-empty)"
       },
       {
         "command": "codeMake.clearHiddenTargets",
@@ -158,6 +177,16 @@
           "command": "codeMake.unhideTarget",
           "when": "view == codeMakeTargets && viewItem == hiddenMakeTarget",
           "group": "inline@3"
+        },
+        {
+          "command": "codeMake.starTarget",
+          "when": "view == codeMakeTargets && viewItem == makeTarget",
+          "group": "inline@2"
+        },
+        {
+          "command": "codeMake.unstarTarget",
+          "when": "view == codeMakeTargets && viewItem == starredMakeTarget",
+          "group": "inline@2"
         }
       ]
     }

@@ -2,7 +2,13 @@
   "codeMake.hiddenTargets": [
     "sub/makefile:should-not-appear-if-filtered",
     "make/debug-verbose.mk:debug",
-    "make/debug-verbose.mk:verbose"
+    "make/debug-verbose.mk:verbose",
+    "makefile:clean",
+    "makefile:all"
   ],
   "codeMake.exclude": ["sub2"],
+  "codeMake.starredTargets": [
+    "makefile:all",
+    "makefile:clean"
+  ],
 }

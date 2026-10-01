@@ -8,10 +8,12 @@ import {
 
 import {
   getHiddenTargetsFromConfig,
+  getStarredTargetsFromConfig,
   getMakeCommand,
   getMakefileExcludeGlob,
   getMakefileGlob,
   updateHiddenTargetsInConfig,
+  updateStarredTargetsInConfig,
 } from './config';
 
 type Target = {
@@ -19,6 +21,13 @@ type Target = {
   file: vscode.Uri;
   phony: boolean
 };
+
+class TargetSection extends vscode.TreeItem {
+  constructor(label: string, readonly targets: vscode.TreeItem[]) {
+    super(label, vscode.TreeItemCollapsibleState.Expanded);
+    this.contextValue = "makeTargetSection";
+  }
+}
 
 function getTargetKey(file: vscode.Uri, target: string): string {
   return `${vscode.workspace.asRelativePath(file, false)}:${target}`;
@@ -41,6 +50,27 @@ function createMakeTask(target: string, makefile: vscode.Uri, resolvedTarget: st
 
 function resolveIncludes(text: string, rootMakefile: vscode.Uri): vscode.Uri[] {
   return parseIncludes(text).map((name) => vscode.Uri.joinPath(rootMakefile, '..', name));
+}
+
+function createItem(target: string, key: string, isHidden: boolean, sourceFile: vscode.Uri, file: vscode.Uri, phony: boolean, isStarred: boolean): vscode.TreeItem {
+  const item = new vscode.TreeItem(target, vscode.TreeItemCollapsibleState.None);
+  item.id = isStarred ? `starred:${key}` : key;
+  item.iconPath = isStarred ? new vscode.ThemeIcon('star-full', new vscode.ThemeColor('charts.yellow')) :
+    new vscode.ThemeIcon('play', phony ? new vscode.ThemeColor('charts.blue') : undefined);
+  item.contextValue = isStarred ? "starredMakeTarget" : isHidden ? "hiddenMakeTarget" : "makeTarget";
+  item.description = vscode.workspace.asRelativePath(sourceFile);
+  item.tooltip = `make ${target}`;
+  item.command = {
+    command: "codeMake.runTarget",
+    title: "Run Make Target",
+    arguments: [{
+      target,
+      makefile: file,
+      file: sourceFile,
+    }, ],
+  };
+
+  return item;
 }
 
 async function collectTargets(file: vscode.Uri, rootMakefile: vscode.Uri = file, visited = new Set < string > ()): Promise < Target[] > {
@@ -99,10 +129,6 @@ class TargetsProvider {
   private fileWatchers: vscode.FileSystemWatcher[] = [];
   private showHiddenTargets = false;
 
-  private getHiddenTargets(): Set < string > {
-    return this.showHiddenTargets ? new Set < string > () : getHiddenTargetsFromConfig();
-  }
-
   getIsShowingHiddenTargets(): boolean {
     return this.showHiddenTargets;
   }
@@ -140,13 +166,17 @@ class TargetsProvider {
     return element;
   }
 
-  async getChildren(): Promise < vscode.TreeItem[] > {
+  async getChildren(element ? : TargetSection): Promise < vscode.TreeItem[] > {
+    if (element instanceof TargetSection) return element.targets;
+
     const files = await vscode.workspace.findFiles(getMakefileGlob(), getMakefileExcludeGlob(), 50);
     files.sort((a: vscode.Uri, b: vscode.Uri) => a.fsPath.localeCompare(b.fsPath));
     const items: vscode.TreeItem[] = [];
+    const starredItems: vscode.TreeItem[] = [];
     const watchedFiles: vscode.Uri[] = [];
     const showHidden = this.getIsShowingHiddenTargets();
     const hiddenTargets = getHiddenTargetsFromConfig(); // returns empty if !this.showHiddenTargets
+    const starredTargets = getStarredTargetsFromConfig();
     for (const file of files) {
       for (const targetRecord of await collectTargets(file)) {
         const {
@@ -156,24 +186,14 @@ class TargetsProvider {
         } = targetRecord;
         const key = getTargetKey(sourceFile, target);
         const isHidden = hiddenTargets.has(key);
-        if (isHidden && !showHidden) continue;
+        const isStarred = starredTargets.has(key);
         watchedFiles.push(sourceFile);
-        const item = new vscode.TreeItem(target, vscode.TreeItemCollapsibleState.None);
-        item.id = key;
-        item.iconPath = new vscode.ThemeIcon('play', phony ? new vscode.ThemeColor('charts.blue') : undefined);
-        item.contextValue = isHidden ? 'hiddenMakeTarget' : 'makeTarget';
-        item.description = vscode.workspace.asRelativePath(sourceFile);
-        item.tooltip = `make ${target}`;
-        item.command = {
-          command: 'codeMake.runTarget',
-          title: 'Run Make Target',
-          arguments: [{
-            target,
-            makefile: file,
-            file: sourceFile
-          }]
-        };
-        items.push(item);
+        if (!isHidden || showHidden) {
+          items.push(createItem(target, key, isHidden, sourceFile, file, phony, false));
+        }
+        if (isStarred) {
+          starredItems.push(createItem(target, key, isHidden, sourceFile, file, phony, isStarred));
+        }
       }
       watchedFiles.push(file);
     }
@@ -183,6 +203,10 @@ class TargetsProvider {
     this.watchFiles([...new Map(watchedFiles.map((file) => [file.toString(), file])).values()]);
     const sortByLabel = (a: vscode.TreeItem, b: vscode.TreeItem) => String(a.label).localeCompare(String(b.label));
     items.sort(sortByLabel)
+    starredItems.sort(sortByLabel)
+    if (starredItems.length) {
+      items.unshift(new TargetSection("Starred", starredItems));
+    }
     if (items.length) return items;
     const empty = new vscode.TreeItem('No visible Makefile targets found');
     empty.iconPath = new vscode.ThemeIcon('info');
@@ -291,6 +315,24 @@ async function toggleTargetHidden(provider: TargetsProvider, arg: any, hide: boo
   provider.refresh();
 }
 
+async function toggleTargetStar(provider: TargetsProvider, arg: any, star: boolean): Promise < void > {
+  const spec = parseTreeItemTarget(arg);
+  if (!spec?.target || !spec?.file) return;
+  const starredTargets = getStarredTargetsFromConfig();
+  const key = getTargetKey(spec.file, spec.target);
+  let update = false;
+  if (star) {
+    update = !starredTargets.has(key);
+    starredTargets.add(key);
+  } else {
+    update = starredTargets.delete(key);
+  }
+  if (update) {
+    await updateStarredTargetsInConfig([...starredTargets]);
+  }
+  provider.refresh();
+}
+
 function toggleHiddenTargets(provider: TargetsProvider): void {
   provider.toggleHiddenTargets();
   vscode.commands.executeCommand('setContext', 'codeMake.showingHiddenTargets', provider.getIsShowingHiddenTargets());
@@ -308,6 +350,8 @@ export function activate(context: any): void {
     vscode.commands.registerCommand('codeMake.openTargetSource', openTargetSource),
     vscode.commands.registerCommand('codeMake.hideTarget', (arg: any) => toggleTargetHidden(provider, arg, true)),
     vscode.commands.registerCommand('codeMake.unhideTarget', (arg: any) => toggleTargetHidden(provider, arg, false)),
+    vscode.commands.registerCommand('codeMake.starTarget', (arg: any) => toggleTargetStar(provider, arg, true)),
+    vscode.commands.registerCommand('codeMake.unstarTarget', (arg: any) => toggleTargetStar(provider, arg, false)),
     vscode.commands.registerCommand('codeMake.clearHiddenTargets', () => toggleHiddenTargets(provider)),
     vscode.commands.registerCommand('codeMake.hideShownTargets', () => toggleHiddenTargets(provider)), {
       dispose: () => provider.dispose()
