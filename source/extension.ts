@@ -268,22 +268,21 @@ function parseTreeItemTarget(item: any): {
   return undefined;
 }
 
-async function hideTarget(provider: TargetsProvider, arg: any): Promise < void > {
+async function toggleTargetHidden(provider: TargetsProvider, arg: any, hide: boolean): Promise < void > {
   const spec = parseTreeItemTarget(arg);
   if (!spec?.target || !spec?.file) return;
   const hiddenTargets = getHiddenTargetsFromConfig();
   const target = spec.target;
-  hiddenTargets.add(target);
-  await updateHiddenTargetsInConfig([...hiddenTargets]);
-  provider.refresh();
-}
-async function unhideTarget(provider: TargetsProvider, arg: any): Promise < void > {
-  const spec = parseTreeItemTarget(arg);
-  if (!spec?.target || !spec?.file) return;
-  const hiddenTargets = getHiddenTargetsFromConfig();
-  const target = spec.target;
-  hiddenTargets.delete(target);
-  await updateHiddenTargetsInConfig([...hiddenTargets]);
+  let update = false;
+  if (hide) {
+    update = !hiddenTargets.has(target);
+    hiddenTargets.add(target);
+  } else {
+    update = hiddenTargets.delete(target);
+  }
+  if (update) {
+    await updateHiddenTargetsInConfig([...hiddenTargets]);
+  }
   provider.refresh();
 }
 
@@ -302,8 +301,8 @@ export function activate(context: any): void {
     vscode.commands.registerCommand('codeMake.refresh', () => provider.refresh()),
     vscode.commands.registerCommand('codeMake.runTarget', runTarget),
     vscode.commands.registerCommand('codeMake.openTargetSource', openTargetSource),
-    vscode.commands.registerCommand('codeMake.hideTarget', (arg: any) => hideTarget(provider, arg)),
-    vscode.commands.registerCommand('codeMake.unhideTarget', (arg: any) => unhideTarget(provider, arg)),
+    vscode.commands.registerCommand('codeMake.hideTarget', (arg: any) => toggleTargetHidden(provider, arg, true)),
+    vscode.commands.registerCommand('codeMake.unhideTarget', (arg: any) => toggleTargetHidden(provider, arg, false)),
     vscode.commands.registerCommand('codeMake.clearHiddenTargets', () => toggleHiddenTargets(provider)),
     vscode.commands.registerCommand('codeMake.hideShownTargets', () => toggleHiddenTargets(provider)), {
       dispose: () => provider.dispose()
