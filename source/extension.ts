@@ -98,7 +98,6 @@ class TargetsProvider {
   readonly onDidChangeTreeData = this.changeEmitter.event;
   private fileWatchers: vscode.FileSystemWatcher[] = [];
   private showHiddenTargets = false;
-  constructor(private readonly context: any) {}
 
   private getHiddenTargets(): Set < string > {
     return this.showHiddenTargets ? new Set < string > () : getHiddenTargetsFromConfig();
@@ -187,8 +186,6 @@ class TargetsProvider {
 }
 
 class MakeTaskProvider {
-  constructor(private readonly context: any) {}
-
   private getHiddenTargets(): Set < string > {
     return getHiddenTargetsFromConfig();
   }
@@ -271,7 +268,7 @@ function parseTreeItemTarget(item: any): {
   return undefined;
 }
 
-async function hideTarget(context: any, provider: TargetsProvider, arg: any): Promise < void > {
+async function hideTarget(provider: TargetsProvider, arg: any): Promise < void > {
   const spec = parseTreeItemTarget(arg);
   if (!spec?.target || !spec?.file) return;
   const hiddenTargets = getHiddenTargetsFromConfig();
@@ -280,7 +277,7 @@ async function hideTarget(context: any, provider: TargetsProvider, arg: any): Pr
   await updateHiddenTargetsInConfig([...hiddenTargets]);
   provider.refresh();
 }
-async function unhideTarget(context: any, provider: TargetsProvider, arg: any): Promise < void > {
+async function unhideTarget(provider: TargetsProvider, arg: any): Promise < void > {
   const spec = parseTreeItemTarget(arg);
   if (!spec?.target || !spec?.file) return;
   const hiddenTargets = getHiddenTargetsFromConfig();
@@ -296,8 +293,8 @@ function toggleHiddenTargets(provider: TargetsProvider): void {
 }
 
 export function activate(context: any): void {
-  const provider = new TargetsProvider(context);
-  const taskProvider = new MakeTaskProvider(context);
+  const provider = new TargetsProvider();
+  const taskProvider = new MakeTaskProvider();
   vscode.commands.executeCommand('setContext', 'codeMake.showingHiddenTargets', false);
   context.subscriptions.push(
     vscode.window.registerTreeDataProvider('codeMakeTargets', provider),
@@ -305,8 +302,8 @@ export function activate(context: any): void {
     vscode.commands.registerCommand('codeMake.refresh', () => provider.refresh()),
     vscode.commands.registerCommand('codeMake.runTarget', runTarget),
     vscode.commands.registerCommand('codeMake.openTargetSource', openTargetSource),
-    vscode.commands.registerCommand('codeMake.hideTarget', (arg: any) => hideTarget(context, provider, arg)),
-    vscode.commands.registerCommand('codeMake.unhideTarget', (arg: any) => unhideTarget(context, provider, arg)),
+    vscode.commands.registerCommand('codeMake.hideTarget', (arg: any) => hideTarget(provider, arg)),
+    vscode.commands.registerCommand('codeMake.unhideTarget', (arg: any) => unhideTarget(provider, arg)),
     vscode.commands.registerCommand('codeMake.clearHiddenTargets', () => toggleHiddenTargets(provider)),
     vscode.commands.registerCommand('codeMake.hideShownTargets', () => toggleHiddenTargets(provider)), {
       dispose: () => provider.dispose()

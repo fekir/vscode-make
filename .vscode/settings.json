@@ -4,6 +4,5 @@
     "verbose",
     "should-not-appear-if-filtered"
   ],
-  "codeMake.maxDepth": 1,
   "codeMake.exclude": ["sub2"],
 }
