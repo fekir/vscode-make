@@ -13,6 +13,7 @@ TSC_ES     ?= ES2025
 TSC_TROOTS ?= /usr/share/nodejs/@types/
 TSC_FLAGS  ?= --ignoreConfig --target $(TSC_ES) --module commonjs --strict --esModuleInterop --skipLibCheck false --typeRoots $(TSC_TROOTS)
 
+SOURCE_DATE_EPOCH ?= 315532800
 PAGER ?= /usr/bin/less --RAW-CONTROL-CHARS --quit-if-one-screen
 
 var_status  = $(if $(filter undefined,$(origin $(1))),$(YELLOW)<unset>$(RESET),$(if $($(1)),$($(1)),$(YELLOW)<unset>$(RESET)))
