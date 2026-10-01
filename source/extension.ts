@@ -21,7 +21,7 @@ type Target = {
 };
 
 function getTargetKey(file: vscode.Uri, target: string): string {
-  return `${file.toString()}:${target}`;
+  return `${vscode.workspace.asRelativePath(file, false)}:${target}`;
 }
 
 function createMakeTask(target: string, makefile: vscode.Uri, resolvedTarget: string): vscode.Task {
@@ -155,7 +155,7 @@ class TargetsProvider {
           phony
         } = targetRecord;
         const key = getTargetKey(sourceFile, target);
-        const isHidden = hiddenTargets.has(target);
+        const isHidden = hiddenTargets.has(key);
         if (isHidden && !showHidden) continue;
         watchedFiles.push(sourceFile);
         const item = new vscode.TreeItem(target, vscode.TreeItemCollapsibleState.None);
@@ -272,13 +272,13 @@ async function toggleTargetHidden(provider: TargetsProvider, arg: any, hide: boo
   const spec = parseTreeItemTarget(arg);
   if (!spec?.target || !spec?.file) return;
   const hiddenTargets = getHiddenTargetsFromConfig();
-  const target = spec.target;
+  const key = getTargetKey(spec.file, spec.target);
   let update = false;
   if (hide) {
-    update = !hiddenTargets.has(target);
-    hiddenTargets.add(target);
+    update = !hiddenTargets.has(key);
+    hiddenTargets.add(key);
   } else {
-    update = hiddenTargets.delete(target);
+    update = hiddenTargets.delete(key);
   }
   if (update) {
     await updateHiddenTargetsInConfig([...hiddenTargets]);
