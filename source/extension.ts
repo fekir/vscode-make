@@ -181,6 +181,8 @@ class TargetsProvider {
     //  watchedFiles.push(vscode.workspace.workspaceFile)
     //}
     this.watchFiles([...new Map(watchedFiles.map((file) => [file.toString(), file])).values()]);
+    const sortByLabel = (a: vscode.TreeItem, b: vscode.TreeItem) => String(a.label).localeCompare(String(b.label));
+    items.sort(sortByLabel)
     if (items.length) return items;
     const empty = new vscode.TreeItem('No visible Makefile targets found');
     empty.iconPath = new vscode.ThemeIcon('info');
